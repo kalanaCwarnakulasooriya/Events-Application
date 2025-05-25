@@ -51,7 +51,7 @@
         }
 
         #saveEvent { background-color: #28a745; }
-        #viewEvents { background-color: #007bff; }
+        #updateEvent { background-color: #007bff; }
         #deleteEvent { background-color: #dc3545; }
 
         table {
@@ -108,7 +108,7 @@
     <input type="text" id="eventLocation" name="eventLocation">
 
     <button id="saveEvent">Save</button>
-    <button id="viewEvents">Update</button>
+    <button id="updateEvent">Update</button>
     <button id="deleteEvent">Delete</button>
 </div>
 
@@ -168,6 +168,10 @@
 
     $("#saveEvent").on("click", function () {
         const eventData = getEventFormData();
+        if (!eventData.ename || !eventData.edescription || !eventData.edate || !eventData.eplace) {
+            alert("Please fill in all fields.");
+            return;
+        }
         fetch(BASE_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -195,11 +199,33 @@
                 if (res.ok) {
                     alert("Event updated successfully!");
                     loadEvents();
+                    resetForm();
                 } else {
                     alert("Update failed.");
                 }
             });
     });
+
+    $("#deleteEvent").on("click", function () {
+        const eid = $("#eventId").val();
+        if (!eid) {
+            alert("Please enter an Event ID to delete.");
+            return;
+        }
+
+        fetch(BASE_URL + "?eid=" + encodeURIComponent(eid), {
+            method: "DELETE"
+        })
+            .then(res => {
+                if (res.ok) {
+                    alert("Event deleted successfully!");
+                    loadEvents();
+                } else {
+                    alert("Delete failed.");
+                }
+            });
+    });
+
 
     $("#tbody").on("click", "tr", function () {
         const tds = $(this).children("td");
