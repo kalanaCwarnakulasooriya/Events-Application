@@ -1,7 +1,6 @@
 package lk.ijse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,21 +15,24 @@ import java.util.Map;
 
 @WebServlet("/events")
 public class Main extends HttpServlet {
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/event",
+                "root",
+                "Ijse@1234"
+        );
+    }
+
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection connection =
-                    DriverManager.getConnection("jdbc:mysql://localhost:3306/event",
-                            "root",
-                            "Ijse@1234");
-            PreparedStatement pstm = connection.prepareStatement("select * from events");
-
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        try (Connection connection = getConnection()) {
+            PreparedStatement pstm = connection.prepareStatement("SELECT * FROM events");
             ResultSet resultSet = pstm.executeQuery();
-            List<Map<String,String>> elist = new ArrayList<Map<String,String>>();
 
+            List<Map<String, String>> elist = new ArrayList<>();
             while (resultSet.next()) {
-                Map<String, String> event = new HashMap<String, String>();
+                Map<String, String> event = new HashMap<>();
                 event.put("eid", resultSet.getString("eid"));
                 event.put("ename", resultSet.getString("ename"));
                 event.put("edescription", resultSet.getString("edescription"));
@@ -39,15 +41,47 @@ public class Main extends HttpServlet {
                 elist.add(event);
             }
 
-            resp.setHeader("Access-Control-Allow-Origin", "*");
-            resp.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+            setCORS(resp);
             resp.setContentType("application/json");
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(resp.getWriter(), elist);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            new ObjectMapper().writeValue(resp.getWriter(), elist);
+
+        } catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, String> data = mapper.readValue(req.getReader(), Map.class);
+
+        try (Connection connection = getConnection()) {
+            PreparedStatement pstm = connection.prepareStatement(
+                    "INSERT INTO events (eid, ename, edescription, edate, eplace) VALUES (?, ?, ?, ?, ?)"
+            );
+            pstm.setString(1, data.get("eid"));
+            pstm.setString(2, data.get("ename"));
+            pstm.setString(3, data.get("edescription"));
+            pstm.setString(4, data.get("edate"));
+            pstm.setString(5, data.get("eplace"));
+            pstm.executeUpdate();
+
+            setCORS(resp);
+            resp.setStatus(HttpServletResponse.SC_CREATED);
+        } catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    private void setCORS(HttpServletResponse resp) {
+        resp.setHeader("Access-Control-Allow-Origin", "*");
+        resp.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    }
+
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        setCORS(resp);
+        resp.setStatus(HttpServletResponse.SC_OK);
     }
 }
