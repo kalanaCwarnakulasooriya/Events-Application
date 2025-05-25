@@ -117,5 +117,30 @@
     </thead>
     <tbody id="tbody"></tbody>
 </table>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $.ajax({
+            url: "http://localhost:8080/Events_Application_Web_exploded/events",
+            method: "GET",
+            success: function (result) {
+                $.each(result, function (index, value) {
+                    $("#tbody").append(`
+                        <tr>
+                            <td>${value.eid}</td>
+                            <td>${value.ename}</td>
+                            <td>${value.edescription}</td>
+                            <td>${value.edate}</td>
+                            <td>${value.eplace}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+    });
+</script>
 </body>
 </html>
