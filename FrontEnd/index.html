@@ -151,6 +151,7 @@
                         </tr>
                     `);
                 });
+                resetForm();
             }
         });
     }
@@ -176,11 +177,29 @@
                 if (res.ok) {
                     alert("Event saved successfully!");
                     loadEvents();
+                    resetForm();
                 } else {
                     alert("Save failed.");
                 }
             });
     });
+
+    $("#tbody").on("click", "tr", function () {
+        const tds = $(this).children("td");
+        $("#eventId").val(tds.eq(0).text());
+        $("#eventName").val(tds.eq(1).text());
+        $("#eventDescription").val(tds.eq(2).text());
+        $("#eventDate").val(tds.eq(3).text());
+        $("#eventLocation").val(tds.eq(4).text());
+    });
+
+    function resetForm() {
+        $("#eventId").val('');
+        $("#eventName").val('');
+        $("#eventDescription").val('');
+        $("#eventDate").val('');
+        $("#eventLocation").val('');
+    }
 </script>
 </body>
 </html>
