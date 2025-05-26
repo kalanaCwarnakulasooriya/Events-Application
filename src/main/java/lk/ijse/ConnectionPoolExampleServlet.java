@@ -10,6 +10,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -19,8 +20,9 @@ import java.util.Map;
 
 @WebServlet("/connectionpool")
 public class ConnectionPoolExampleServlet extends HttpServlet {
+    private BasicDataSource dataSource;
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void init() throws ServletException {
         //50
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
@@ -29,7 +31,10 @@ public class ConnectionPoolExampleServlet extends HttpServlet {
         dataSource.setPassword("Ijse@1234");
         dataSource.setInitialSize(5);
         dataSource.setMaxTotal(50);
+    }
 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
             Connection connection = dataSource.getConnection();
             ResultSet resultSet = connection.createStatement().executeQuery("SELECT * FROM events");
@@ -48,6 +53,29 @@ public class ConnectionPoolExampleServlet extends HttpServlet {
             mapper.writeValue(resp.getWriter(), elist);
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, String> data = mapper.readValue(req.getReader(), Map.class);
+
+        try (Connection connection = dataSource.getConnection()) {
+            PreparedStatement pstm = connection.prepareStatement(
+                    "INSERT INTO events (eid, ename, edescription, edate, eplace) VALUES (?, ?, ?, ?, ?)"
+            );
+            pstm.setString(1, data.get("eid"));
+            pstm.setString(2, data.get("ename"));
+            pstm.setString(3, data.get("edescription"));
+            pstm.setString(4, data.get("edate"));
+            pstm.setString(5, data.get("eplace"));
+            pstm.executeUpdate();
+
+//            setCORS(resp);
+            resp.setStatus(HttpServletResponse.SC_CREATED);
+        } catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }
