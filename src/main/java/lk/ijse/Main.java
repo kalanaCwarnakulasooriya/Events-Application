@@ -126,7 +126,7 @@ public class Main extends HttpServlet {
 //        resp.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
 //        resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
 //    }
-
+//
 //    @Override
 //    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 //        setCORS(resp);
